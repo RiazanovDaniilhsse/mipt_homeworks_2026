@@ -36,7 +36,6 @@ EMPTY_DICT: Dict[str, Any] = {}
 
 financial_transactions_storage: list[dict[str, Any]] = []
 
-
 def is_leap_year(year: int) -> bool:
     if year % 400 == 0:
         return True
