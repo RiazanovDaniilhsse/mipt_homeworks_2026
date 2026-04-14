@@ -86,12 +86,12 @@ class LFUPolicy(Policy[K]):
     def register_access(self, key: K) -> None:
         self._key_counter[key] = self._key_counter.get(key, 0) + 1
 
-   def get_key_to_evict(self) -> K | None:
+    def get_key_to_evict(self) -> K | None:
         if len(self._key_counter) <= self.capacity:
             return None
-        
+
         min_value = min(self._key_counter.values())
-        
+
         for key, value in self._key_counter.items():
             if value == min_value:
                 return key
