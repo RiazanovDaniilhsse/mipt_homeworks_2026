@@ -91,14 +91,12 @@ class LFUPolicy(Policy[K]):
         self._key_counter[key] = self._key_counter.get(key, 0) + 1
 
     def get_key_to_evict(self) -> K | None:
-        if len(self._key_counter) >= self.capacity:
-            # Находим минимальное количество обращений
-            min_hits = min(self._key_counter.values())
-            # Dict сохраняет порядок вставки, поэтому первый ключ с min_hits — самый старый
-            for key, hits in self._key_counter.items():
-                if hits == min_hits:
-                    return key
-        return None
+        if len(self._key_counter) <= self.capacity:
+            return None
+        pretenders = [i for i in self._key_counter if i != self._last_accessed]
+        min_count = min(self._key_counter[i] for i in pretenders)
+        min_keys = [i for i in pretenders if self._key_counter[i] == min_count]
+        return min(min_keys, key=lambda i: self._entry_time[i])
 
     def remove_key(self, key: K) -> None:
         self._key_counter.pop(key, None)
@@ -117,15 +115,12 @@ class MIPTCache(Cache[K, V]):
         self.policy = policy
 
     def set(self, key: K, value: V) -> None:
-        # Если ключа нет — сначала освобождаем место, чтобы не выкинуть "новичка"
-        if not self.storage.exists(key):
-            evict_key = self.policy.get_key_to_evict()
-            if evict_key is not None:
-                self.storage.remove(evict_key)
-                self.policy.remove_key(evict_key)
-
         self.storage.set(key, value)
         self.policy.register_access(key)
+        evict_key = self.policy.get_key_to_evict()
+        if evict_key is not None:
+            self.storage.remove(evict_key)
+            self.policy.remove_key(evict_key)
 
     def get(self, key: K) -> V | None:
         if self.storage.exists(key):
@@ -157,8 +152,8 @@ class CachedProperty[V]:
 
         cache = instance.cache
         if cache.exists(self.name):
-            return cache.get(self.name)  # type: ignore
+            return cache.get(self.name)
 
         result = self.func(instance)
-        cache.set(self.name, result)  # type: ignore
+        cache.set(self.name, result)
         return result
