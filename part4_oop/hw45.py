@@ -36,8 +36,6 @@ class FIFOPolicy(Policy[K]):
 
     def register_access(self, key: K) -> None:
         if key not in self._order:
-            if len(self._order) >= self.capacity:
-                self._order.pop(0)
             self._order.append(key)
 
     def get_key_to_evict(self) -> K | None:
@@ -88,24 +86,31 @@ class LRUPolicy(Policy[K]):
 class LFUPolicy(Policy[K]):
     capacity: int = 5
     _key_counter: dict[K, int] = field(default_factory=dict, init=False)
+    _order: list[K] = field(default_factory=list, init=False)
 
     def register_access(self, key: K) -> None:
         if key in self._key_counter:
             self._key_counter[key] += 1
         else:
             self._key_counter[key] = 1
+            self._order.append(key)
 
     def get_key_to_evict(self) -> K | None:
         if len(self._key_counter) > self.capacity:
-            return min(self._key_counter.items(), key=lambda x: x[1])[0]
+            min_count = min(self._key_counter.values())
+            candidates = [k for k in self._order if k in self._key_counter and self._key_counter[k] == min_count]
+            return candidates[0] if candidates else None
         return None
 
     def remove_key(self, key: K) -> None:
         if key in self._key_counter:
             del self._key_counter[key]
+        if key in self._order:
+            self._order.remove(key)
 
     def clear(self) -> None:
         self._key_counter.clear()
+        self._order.clear()
 
     @property
     def has_keys(self) -> bool:
@@ -118,16 +123,16 @@ class MIPTCache(Cache[K, V]):
         self.policy = policy
 
     def set(self, key: K, value: V) -> None:
-        self.policy.register_access(key)
-
-        self.storage.set(key, value)
-
         key_to_evict = self.policy.get_key_to_evict()
         if key_to_evict is not None:
             self.storage.remove(key_to_evict)
             self.policy.remove_key(key_to_evict)
 
+        self.policy.register_access(key)
+        self.storage.set(key, value)
+
     def get(self, key: K) -> V | None:
+        # Регистрируем доступ при чтении
         self.policy.register_access(key)
         return self.storage.get(key)
 
@@ -164,6 +169,7 @@ class CachedProperty[V]:
                 return result
 
         result = self.func(instance)
+
         cache.set(cache_key, result)
 
         return result
