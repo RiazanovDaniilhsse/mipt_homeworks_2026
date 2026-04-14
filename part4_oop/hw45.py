@@ -146,7 +146,7 @@ class CachedProperty[V]:
         self.func = func
         self.name = func.__name__
 
-    def __get__(self, instance: HasCache[Any, Any] | None, owner: type) -> V | "CachedProperty[V]":
+    def __get__(self, instance: HasCache[Any, Any] | None, owner: type) -> V:
         if instance is None:
             return self
 
