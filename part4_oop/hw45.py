@@ -149,9 +149,9 @@ class CachedProperty[V]:
     def __get__(self, instance: HasCache[Any, Any] | None, owner: type) -> V:
         if instance is None:
             return self
-
-        value = instance.cache.get(self.name)
+        key = self.func.__name__
+        value = instance.cache.get(key)
         if value is None:
             value = self.func(instance)
-            instance.cache.set(self.name, value)
+            instance.cache.set(key, value)
         return value
