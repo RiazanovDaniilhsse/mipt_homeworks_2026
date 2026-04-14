@@ -39,7 +39,7 @@ class FIFOPolicy(Policy[K]):
             self._order.append(key)
 
     def get_key_to_evict(self) -> K | None:
-        return self._order[0] if len(self._order) > self.capacity else None
+        return self._order[0] if len(self._order) >= self.capacity else None
 
     def remove_key(self, key: K) -> None:
         if key in self._order:
@@ -64,7 +64,7 @@ class LRUPolicy(Policy[K]):
         self._order.append(key)
 
     def get_key_to_evict(self) -> K | None:
-        return self._order[0] if len(self._order) > self.capacity else None
+        return self._order[0] if len(self._order) >= self.capacity else None
 
     def remove_key(self, key: K) -> None:
         if key in self._order:
