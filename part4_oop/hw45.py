@@ -22,8 +22,7 @@ class DictStorage(Storage[K, V]):
         return key in self._data
 
     def remove(self, key: K) -> None:
-        if key in self._data:
-            del self._data[key]
+        self._data.pop(key, None)
 
     def clear(self) -> None:
         self._data.clear()
@@ -39,9 +38,7 @@ class FIFOPolicy(Policy[K]):
             self._order.append(key)
 
     def get_key_to_evict(self) -> K | None:
-        if len(self._order) >= self.capacity:
-            return self._order[0]
-        return None
+        return self._order[0] if len(self._order) > self.capacity else None
 
     def remove_key(self, key: K) -> None:
         if key in self._order:
@@ -66,9 +63,7 @@ class LRUPolicy(Policy[K]):
         self._order.append(key)
 
     def get_key_to_evict(self) -> K | None:
-        if len(self._order) >= self.capacity:
-            return self._order[0]
-        return None
+        return self._order[0] if len(self._order) > self.capacity else None
 
     def remove_key(self, key: K) -> None:
         if key in self._order:
@@ -86,23 +81,29 @@ class LRUPolicy(Policy[K]):
 class LFUPolicy(Policy[K]):
     capacity: int = 5
     _key_counter: dict[K, int] = field(default_factory=dict, init=False)
+    _last_accessed: K | None = field(default=None, init=False)
 
     def register_access(self, key: K) -> None:
         self._key_counter[key] = self._key_counter.get(key, 0) + 1
+        self._last_accessed = key
 
     def get_key_to_evict(self) -> K | None:
         if len(self._key_counter) <= self.capacity:
             return None
-        pretenders = [i for i in self._key_counter if i != self._last_accessed]
-        min_count = min(self._key_counter[i] for i in pretenders)
-        min_keys = [i for i in pretenders if self._key_counter[i] == min_count]
-        return min(min_keys, key=lambda i: self._entry_time[i])
+        candidates = {k: v for k, v in self._key_counter.items() if k != self._last_accessed}
+
+        min_hits = min(candidates.values())
+        for key, hits in candidates.items():
+            if hits == min_hits:
+                return key
+        return None
 
     def remove_key(self, key: K) -> None:
         self._key_counter.pop(key, None)
 
     def clear(self) -> None:
         self._key_counter.clear()
+        self._last_accessed = None
 
     @property
     def has_keys(self) -> bool:
@@ -123,18 +124,17 @@ class MIPTCache(Cache[K, V]):
             self.policy.remove_key(evict_key)
 
     def get(self, key: K) -> V | None:
-        if self.storage.exists(key):
+        value = self.storage.get(key)
+        if value is not None:
             self.policy.register_access(key)
-            return self.storage.get(key)
-        return None
+        return value
 
     def exists(self, key: K) -> bool:
         return self.storage.exists(key)
 
     def remove(self, key: K) -> None:
-        if self.storage.exists(key):
-            self.storage.remove(key)
-            self.policy.remove_key(key)
+        self.storage.remove(key)
+        self.policy.remove_key(key)
 
     def clear(self) -> None:
         self.storage.clear()
@@ -150,10 +150,8 @@ class CachedProperty[V]:
         if instance is None:
             return self
 
-        cache = instance.cache
-        if cache.exists(self.name):
-            return cache.get(self.name)
-
-        result = self.func(instance)
-        cache.set(self.name, result)
-        return result
+        value = instance.cache.get(self.name)
+        if value is None:
+            value = self.func(instance)
+            instance.cache.set(self.name, value)
+        return value
