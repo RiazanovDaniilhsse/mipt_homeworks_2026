@@ -8,7 +8,7 @@ INCORRECT_DATE_MSG = "Invalid date!"
 NOT_EXISTS_CATEGORY = "Category not exists!"
 OP_SUCCESS_MSG = "Added"
 
-EXPENSE_CATEGORIES = {
+EXPENSE_CATEGORIES: dict[str, tuple[str, ...]] = {
     "Food": ("Supermarket", "Restaurants", "FastFood", "Coffee", "Delivery"),
     "Transport": ("Taxi", "Public transport", "Gas", "Car service"),
     "Housing": ("Rent", "Utilities", "Repairs", "Furniture"),
@@ -20,18 +20,18 @@ EXPENSE_CATEGORIES = {
     "Other": ("SomeCategory", "SomeOtherCategory"),
 }
 
-DAYS_IN_MONTH = (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
-FEBRUARY = 2
-FEBRUARY_IN_LEAP_YEAR = 29
-MIN_MONTH = 1
-MAX_MONTH = 12
-MIN_DAY = 1
-DATE_PARTS_COUNT = 3
-INCOME_ARGS_COUNT = 3
-COST_ARGS_COUNT = 4
-STATS_ARGS_COUNT = 2
-COST_CATEGORIES_ARGS_COUNT = 2
-CATEGORY_SEPARATOR = "::"
+DAYS_IN_MONTH: tuple[int, ...] = (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+FEBRUARY: int = 2
+FEBRUARY_IN_LEAP_YEAR: int = 29
+MIN_MONTH: int = 1
+MAX_MONTH: int = 12
+MIN_DAY: int = 1
+DATE_PARTS_COUNT: int = 3
+INCOME_ARGS_COUNT: int = 3
+COST_ARGS_COUNT: int = 4
+STATS_ARGS_COUNT: int = 2
+COST_CATEGORIES_ARGS_COUNT: int = 2
+CATEGORY_SEPARATOR: str = "::"
 
 EMPTY_DICT: dict[str, Any] = {}
 
@@ -179,12 +179,32 @@ def is_same_month(date1: tuple[int, int, int], date2: tuple[int, int, int]) -> b
     return date1[1] == date2[1] and date1[2] == date2[2]
 
 
-def split_transactions() -> tuple[
-    list[tuple[float, tuple[int, int, int]]], list[tuple[str, float, tuple[int, int, int]]]
-]:
-    incomes: list[tuple[float, tuple[int, int, int]]] = []
-    expenses: list[tuple[str, float, tuple[int, int, int]]] = []
+IncomeRecord = tuple[float, tuple[int, int, int]]
+ExpenseRecord = tuple[str, float, tuple[int, int, int]]
 
+
+def _collect_income_records() -> list[IncomeRecord]:
+    """Helper function to collect income records."""
+    incomes: list[IncomeRecord] = []
+    for transaction in financial_transactions_storage:
+        if not transaction:
+            continue
+
+        amount = transaction.get("amount")
+        date = transaction.get("date")
+
+        if amount is None or date is None:
+            continue
+
+        category = transaction.get("category")
+        if category is None:
+            incomes.append((amount, date))
+    return incomes
+
+
+def _collect_expense_records() -> list[ExpenseRecord]:
+    """Helper function to collect expense records."""
+    expenses: list[ExpenseRecord] = []
     for transaction in financial_transactions_storage:
         if not transaction:
             continue
@@ -198,15 +218,18 @@ def split_transactions() -> tuple[
         category = transaction.get("category")
         if category is not None:
             expenses.append((category, amount, date))
-        else:
-            incomes.append((amount, date))
+    return expenses
 
+
+def split_transactions() -> tuple[list[IncomeRecord], list[ExpenseRecord]]:
+    incomes = _collect_income_records()
+    expenses = _collect_expense_records()
     return incomes, expenses
 
 
 def calculate_income_stats(
     target_date: tuple[int, int, int],
-    incomes: list[tuple[float, tuple[int, int, int]]],
+    incomes: list[IncomeRecord],
 ) -> tuple[float, float]:
     total_capital = 0.0
     month_income = 0.0
@@ -223,7 +246,7 @@ def calculate_income_stats(
 
 def calculate_expense_stats(
     target_date: tuple[int, int, int],
-    expenses: list[tuple[str, float, tuple[int, int, int]]],
+    expenses: list[ExpenseRecord],
 ) -> tuple[float, float, dict[str, float]]:
     total_capital = 0.0
     month_expense = 0.0
@@ -344,6 +367,18 @@ def handle_stats(parts: list[str]) -> None:
     print(result)
 
 
+def process_command(command: str, parts: list[str]) -> None:
+    """Process a single command."""
+    if command == "income":
+        handle_income(parts)
+    elif command == "cost":
+        handle_cost(parts)
+    elif command == "stats":
+        handle_stats(parts)
+    else:
+        print(UNKNOWN_COMMAND_MSG)
+
+
 def main() -> None:
     while True:
         try:
@@ -359,15 +394,7 @@ def main() -> None:
             continue
 
         command = parts[0]
-
-        if command == "income":
-            handle_income(parts)
-        elif command == "cost":
-            handle_cost(parts)
-        elif command == "stats":
-            handle_stats(parts)
-        else:
-            print(UNKNOWN_COMMAND_MSG)
+        process_command(command, parts)
 
 
 if __name__ == "__main__":
