@@ -24,7 +24,10 @@ EXPENSE_CATEGORIES: dict[str, tuple[str, ...]] = {
     "Other": ("SomeCategory", "SomeOtherCategory"),
 }
 
-DAYS_IN_MONTH: tuple[int, ...] = (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+DAYS_IN_MONTH: tuple[int, ...] = (
+    31, 28, 31, 30, 31, 30,
+    31, 31, 30, 31, 30, 31
+)
 
 FEBRUARY: int = 2
 FEBRUARY_IN_LEAP_YEAR: int = 29
