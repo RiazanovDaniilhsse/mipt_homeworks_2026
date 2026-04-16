@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from typing import Any, Optional  
+from typing import Any
 
 UNKNOWN_COMMAND_MSG = "Unknown command!"
 NONPOSITIVE_VALUE_MSG = "Value must be grater than zero!"
@@ -60,7 +60,7 @@ def validate_date(day: int, month: int, year: int) -> bool:
     return year >= 1
 
 
-def extract_date(maybe_dt: str) -> Optional[tuple[int, int, int]]:
+def extract_date(maybe_dt: str) -> tuple[int, int, int] | None:
     parts = maybe_dt.split("-")
     if len(parts) != DATE_PARTS_COUNT:
         return None
@@ -76,7 +76,7 @@ def extract_date(maybe_dt: str) -> Optional[tuple[int, int, int]]:
     return None
 
 
-def parse_amount(amount_str: str) -> Optional[float]:
+def parse_amount(amount_str: str) -> float | None:
     normalized = amount_str.replace(",", ".")
     try:
         return float(normalized)
@@ -96,7 +96,7 @@ def is_valid_category(category_name: str) -> bool:
     common_cat, specific_cat = category_name.split(CATEGORY_SEPARATOR, 1)
     if common_cat not in EXPENSE_CATEGORIES:
         return False
-        
+
     return specific_cat in EXPENSE_CATEGORIES[common_cat]
 
 
@@ -130,7 +130,7 @@ def income_handler(amount: float, income_date: str) -> str:
 
 def validate_cost_input(
     category_name: str, amount: float, cost_date: str
-) -> tuple[bool, str, Optional[tuple[int, int, int]]]:
+) -> tuple[bool, str, tuple[int, int, int] | None]:
     if not is_valid_category(category_name):
         return False, NOT_EXISTS_CATEGORY, None
 
