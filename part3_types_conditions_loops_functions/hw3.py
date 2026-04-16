@@ -253,8 +253,8 @@ def calculate_income_stats(
     target_date: DateRecord,
     incomes: list[IncomeRecord],
 ) -> tuple[float, float]:
-    total_capital = 0.0
-    month_income = 0.0
+    total_capital = 0
+    month_income = 0
 
     for amount, date in incomes:
         if not is_earlier(date, target_date):
@@ -270,8 +270,8 @@ def calculate_expense_stats(
     target_date: DateRecord,
     expenses: list[ExpenseRecord],
 ) -> tuple[float, float, dict[str, float]]:
-    total_capital = 0.0
-    month_expense = 0.0
+    total_capital = 0
+    month_expense = 0
     expense_by_category: dict[str, float] = {}
 
     for category, amount, date in expenses:
@@ -280,7 +280,7 @@ def calculate_expense_stats(
         total_capital += amount
         if is_same_month(date, target_date):
             month_expense += amount
-            expense_by_category[category] = expense_by_category.get(category, 0.0) + amount
+            expense_by_category[category] = expense_by_category.get(category, 0) + amount
 
     return total_capital, month_expense, expense_by_category
 
