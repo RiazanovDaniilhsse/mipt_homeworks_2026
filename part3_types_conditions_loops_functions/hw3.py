@@ -55,7 +55,6 @@ EMPTY_DICT: dict[str, Any] = {}
 
 financial_transactions_storage: list[dict[str, Any]] = []
 
-# Type aliases
 DateRecord = tuple[int, int, int]
 IncomeRecord = tuple[float, DateRecord]
 ExpenseRecord = tuple[str, float, DateRecord]
@@ -101,10 +100,25 @@ def extract_date(maybe_dt: str) -> DateRecord | None:
 
 def parse_amount(amount_str: str) -> float | None:
     normalized = amount_str.replace(",", ".")
-    try:
-        return float(normalized)
-    except ValueError:
+    if not normalized:
         return None
+    sign = 1
+    if normalized[0] == "-":
+        sign = -1
+        normalized = normalized[1:]
+    elif normalized[0] == "+":
+        normalized = normalized[1:]
+    if not normalized:
+        return None
+    dot_count = 0
+    for ch in normalized:
+        if ch == ".":
+            dot_count += 1
+            if dot_count > 1:
+                return None
+        elif not ch.isdigit():
+            return None
+    return sign * float(normalized)
 
 
 def save_invalid_transaction() -> None:
@@ -202,7 +216,7 @@ def is_same_month(date1: DateRecord, date2: DateRecord) -> bool:
     return date1[2] == date2[2]
 
 
-def _is_valid_transaction(transaction: dict[str, Any]) -> bool:
+def is_valid_transaction(transaction: dict[str, Any]) -> bool:
     """Check if transaction has required fields."""
     if not transaction:
         return False
@@ -211,11 +225,11 @@ def _is_valid_transaction(transaction: dict[str, Any]) -> bool:
     return amount is not None and date is not None
 
 
-def _collect_income_records() -> list[IncomeRecord]:
+def collect_income_records() -> list[IncomeRecord]:
     """Helper function to collect income records."""
     incomes: list[IncomeRecord] = []
     for transaction in financial_transactions_storage:
-        if not _is_valid_transaction(transaction):
+        if not is_valid_transaction(transaction):
             continue
 
         amount = transaction[AMOUNT_KEY]
@@ -227,11 +241,11 @@ def _collect_income_records() -> list[IncomeRecord]:
     return incomes
 
 
-def _collect_expense_records() -> list[ExpenseRecord]:
+def collect_expense_records() -> list[ExpenseRecord]:
     """Helper function to collect expense records."""
     expenses: list[ExpenseRecord] = []
     for transaction in financial_transactions_storage:
-        if not _is_valid_transaction(transaction):
+        if not is_valid_transaction(transaction):
             continue
 
         amount = transaction[AMOUNT_KEY]
@@ -244,8 +258,8 @@ def _collect_expense_records() -> list[ExpenseRecord]:
 
 
 def split_transactions() -> tuple[list[IncomeRecord], list[ExpenseRecord]]:
-    incomes = _collect_income_records()
-    expenses = _collect_expense_records()
+    incomes = collect_income_records()
+    expenses = collect_expense_records()
     return incomes, expenses
 
 
