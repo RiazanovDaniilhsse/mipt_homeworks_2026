@@ -98,27 +98,20 @@ def extract_date(maybe_dt: str) -> DateRecord | None:
     return None
 
 
-def parse_amount(amount_str: str) -> float | None:
-    normalized = amount_str.replace(",", ".")
-    if not normalized:
+def parse_amount(amount: str) -> float | None:
+    if not amount:
         return None
-    sign = 1
-    if normalized[0] == "-":
-        sign = -1
-        normalized = normalized[1:]
-    elif normalized[0] == "+":
-        normalized = normalized[1:]
-    if not normalized:
+    if amount.count(".") + amount.count(",") > 1:
         return None
-    dot_count = 0
-    for ch in normalized:
-        if ch == ".":
-            dot_count += 1
-            if dot_count > 1:
-                return None
-        elif not ch.isdigit():
-            return None
-    return sign * float(normalized)
+    if "." in amount and "," in amount:
+        return None
+
+    clean_string = amount.replace(",", ".")
+    check_string = clean_string.lstrip("-")
+    if not check_string or not check_string.replace(".", "").isdigit():
+        return None
+
+    return float(clean_string)
 
 
 def save_invalid_transaction() -> None:
