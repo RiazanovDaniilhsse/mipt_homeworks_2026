@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from typing import Any, Optional  # теперь использую типы с маленькой бувы
+from typing import Any, Optional  
 
 UNKNOWN_COMMAND_MSG = "Unknown command!"
 NONPOSITIVE_VALUE_MSG = "Value must be grater than zero!"
@@ -48,7 +48,7 @@ def is_leap_year(year: int) -> bool:
 
 def get_days_in_month(month: int, year: int) -> int:
     if month == FEBRUARY and is_leap_year(year):
-        return FEBRUARY_IN_LEAP_YEAR  # отдельная константа
+        return FEBRUARY_IN_LEAP_YEAR
     return DAYS_IN_MONTH[month - 1]
 
 
@@ -60,7 +60,7 @@ def validate_date(day: int, month: int, year: int) -> bool:
     return year >= 1
 
 
-def extract_date(maybe_dt: str) -> Optional[tuple[int, int, int]]:  # Теперь без try expect
+def extract_date(maybe_dt: str) -> Optional[tuple[int, int, int]]:
     parts = maybe_dt.split("-")
     if len(parts) != DATE_PARTS_COUNT:
         return None
@@ -88,7 +88,7 @@ def save_invalid_transaction() -> None:
     financial_transactions_storage.append(EMPTY_DICT)
 
 
-def is_valid_category(category_name: str) -> bool:  # теперь проверяет на валидность
+def is_valid_category(category_name: str) -> bool:
     """Check if category exists."""
     if CATEGORY_SEPARATOR not in category_name:
         return False
@@ -96,11 +96,11 @@ def is_valid_category(category_name: str) -> bool:  # теперь провер�
     common_cat, specific_cat = category_name.split(CATEGORY_SEPARATOR, 1)
     if common_cat not in EXPENSE_CATEGORIES:
         return False
-    # Убрана проверка
+        
     return specific_cat in EXPENSE_CATEGORIES[common_cat]
 
 
-def get_all_categories() -> list[str]:  # использую list comprehention
+def get_all_categories() -> list[str]:
     return [
         f"{common_cat}{CATEGORY_SEPARATOR}{subcategory}"
         for common_cat, subcategories in EXPENSE_CATEGORIES.items()
@@ -130,7 +130,7 @@ def income_handler(amount: float, income_date: str) -> str:
 
 def validate_cost_input(
     category_name: str, amount: float, cost_date: str
-) -> tuple[bool, str, Optional[tuple[int, int, int]]]:  # функция с валидацией отдельно
+) -> tuple[bool, str, Optional[tuple[int, int, int]]]:
     if not is_valid_category(category_name):
         return False, NOT_EXISTS_CATEGORY, None
 
@@ -358,7 +358,7 @@ def main() -> None:
         if not parts:
             continue
 
-        command = parts[0]  # по сути можно и без .lower()
+        command = parts[0]
 
         if command == "income":
             handle_income(parts)
