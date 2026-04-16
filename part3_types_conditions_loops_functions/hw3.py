@@ -8,6 +8,10 @@ INCORRECT_DATE_MSG = "Invalid date!"
 NOT_EXISTS_CATEGORY = "Category not exists!"
 OP_SUCCESS_MSG = "Added"
 
+AMOUNT_KEY: str = "amount"
+DATE_KEY: str = "date"
+CATEGORY_KEY: str = "category"
+
 EXPENSE_CATEGORIES: dict[str, tuple[str, ...]] = {
     "Food": ("Supermarket", "Restaurants", "FastFood", "Coffee", "Delivery"),
     "Transport": ("Taxi", "Public transport", "Gas", "Car service"),
@@ -21,6 +25,7 @@ EXPENSE_CATEGORIES: dict[str, tuple[str, ...]] = {
 }
 
 DAYS_IN_MONTH: tuple[int, ...] = (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+
 FEBRUARY: int = 2
 FEBRUARY_IN_LEAP_YEAR: int = 29
 MIN_MONTH: int = 1
@@ -36,6 +41,11 @@ CATEGORY_SEPARATOR: str = "::"
 EMPTY_DICT: dict[str, Any] = {}
 
 financial_transactions_storage: list[dict[str, Any]] = []
+
+# Type aliases
+DateRecord = tuple[int, int, int]
+IncomeRecord = tuple[float, DateRecord]
+ExpenseRecord = tuple[str, float, DateRecord]
 
 
 def is_leap_year(year: int) -> bool:
@@ -60,7 +70,7 @@ def validate_date(day: int, month: int, year: int) -> bool:
     return year >= 1
 
 
-def extract_date(maybe_dt: str) -> tuple[int, int, int] | None:
+def extract_date(maybe_dt: str) -> DateRecord | None:
     parts = maybe_dt.split("-")
     if len(parts) != DATE_PARTS_COUNT:
         return None
@@ -121,16 +131,14 @@ def income_handler(amount: float, income_date: str) -> str:
 
     financial_transactions_storage.append(
         {
-            "amount": amount,
-            "date": parsed_date,
+            AMOUNT_KEY: amount,
+            DATE_KEY: parsed_date,
         }
     )
     return OP_SUCCESS_MSG
 
 
-def validate_cost_input(
-    category_name: str, amount: float, cost_date: str
-) -> tuple[bool, str, tuple[int, int, int] | None]:
+def validate_cost_input(category_name: str, amount: float, cost_date: str) -> tuple[bool, str, DateRecord | None]:
     if not is_valid_category(category_name):
         return False, NOT_EXISTS_CATEGORY, None
 
@@ -152,9 +160,9 @@ def cost_handler(category_name: str, amount: float, cost_date: str) -> str:
 
     financial_transactions_storage.append(
         {
-            "category": category_name,
-            "amount": amount,
-            "date": parsed_date,
+            CATEGORY_KEY: category_name,
+            AMOUNT_KEY: amount,
+            DATE_KEY: parsed_date,
         }
     )
     return OP_SUCCESS_MSG
@@ -165,7 +173,7 @@ def cost_categories_handler() -> str:
     return "\n".join(categories)
 
 
-def is_earlier(date1: tuple[int, int, int], date2: tuple[int, int, int]) -> bool:
+def is_earlier(date1: DateRecord, date2: DateRecord) -> bool:
     year1, month1, day1 = date1
     year2, month2, day2 = date2
     if year1 != year2:
@@ -175,28 +183,32 @@ def is_earlier(date1: tuple[int, int, int], date2: tuple[int, int, int]) -> bool
     return day1 <= day2
 
 
-def is_same_month(date1: tuple[int, int, int], date2: tuple[int, int, int]) -> bool:
-    return date1[1] == date2[1] and date1[2] == date2[2]
+def is_same_month(date1: DateRecord, date2: DateRecord) -> bool:
+    if date1[1] != date2[1]:
+        return False
+    return date1[2] == date2[2]
 
 
-IncomeRecord = tuple[float, tuple[int, int, int]]
-ExpenseRecord = tuple[str, float, tuple[int, int, int]]
+def _is_valid_transaction(transaction: dict[str, Any]) -> bool:
+    """Check if transaction has required fields."""
+    if not transaction:
+        return False
+    amount = transaction.get(AMOUNT_KEY)
+    date = transaction.get(DATE_KEY)
+    return amount is not None and date is not None
 
 
 def _collect_income_records() -> list[IncomeRecord]:
     """Helper function to collect income records."""
     incomes: list[IncomeRecord] = []
     for transaction in financial_transactions_storage:
-        if not transaction:
+        if not _is_valid_transaction(transaction):
             continue
 
-        amount = transaction.get("amount")
-        date = transaction.get("date")
+        amount = transaction[AMOUNT_KEY]
+        date = transaction[DATE_KEY]
+        category = transaction.get(CATEGORY_KEY)
 
-        if amount is None or date is None:
-            continue
-
-        category = transaction.get("category")
         if category is None:
             incomes.append((amount, date))
     return incomes
@@ -206,16 +218,13 @@ def _collect_expense_records() -> list[ExpenseRecord]:
     """Helper function to collect expense records."""
     expenses: list[ExpenseRecord] = []
     for transaction in financial_transactions_storage:
-        if not transaction:
+        if not _is_valid_transaction(transaction):
             continue
 
-        amount = transaction.get("amount")
-        date = transaction.get("date")
+        amount = transaction[AMOUNT_KEY]
+        date = transaction[DATE_KEY]
+        category = transaction.get(CATEGORY_KEY)
 
-        if amount is None or date is None:
-            continue
-
-        category = transaction.get("category")
         if category is not None:
             expenses.append((category, amount, date))
     return expenses
@@ -228,7 +237,7 @@ def split_transactions() -> tuple[list[IncomeRecord], list[ExpenseRecord]]:
 
 
 def calculate_income_stats(
-    target_date: tuple[int, int, int],
+    target_date: DateRecord,
     incomes: list[IncomeRecord],
 ) -> tuple[float, float]:
     total_capital = 0.0
@@ -245,7 +254,7 @@ def calculate_income_stats(
 
 
 def calculate_expense_stats(
-    target_date: tuple[int, int, int],
+    target_date: DateRecord,
     expenses: list[ExpenseRecord],
 ) -> tuple[float, float, dict[str, float]]:
     total_capital = 0.0
@@ -379,22 +388,31 @@ def process_command(command: str, parts: list[str]) -> None:
         print(UNKNOWN_COMMAND_MSG)
 
 
+def get_user_input() -> str | None:
+    """Get and clean user input."""
+    try:
+        return input().strip()
+    except EOFError:
+        return None
+
+
+def process_user_input(user_input: str) -> None:
+    """Process a single line of user input."""
+    parts = user_input.split()
+    if not parts:
+        return
+    command = parts[0]
+    process_command(command, parts)
+
+
 def main() -> None:
+    """Main program loop."""
     while True:
-        try:
-            user_input = input().strip()
-        except EOFError:
+        user_input = get_user_input()
+        if user_input is None:
             break
-
-        if not user_input:
-            continue
-
-        parts = user_input.split()
-        if not parts:
-            continue
-
-        command = parts[0]
-        process_command(command, parts)
+        if user_input:
+            process_user_input(user_input)
 
 
 if __name__ == "__main__":
