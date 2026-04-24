@@ -69,7 +69,7 @@ class CircuitBreaker:
         if self.block_time and (now - self.block_time).total_seconds() < self.time_to_recover:
             raise BreakerError(func_name, self.block_time)
 
-    def _handle_failure(self, now: datetime.datetime, func_name: str, exception: Exception):
+    def _handle_failure(self, now: datetime.datetime, func_name: str, exception: Exception) -> None:
         self.fail_count += 1
         if self.fail_count >= self.critical_count:
             self.block_time = now
@@ -84,7 +84,6 @@ class CircuitBreaker:
 circuit_breaker = CircuitBreaker(5, 30, Exception)
 
 
-@circuit_breaker
 def get_comments(post_id: int) -> Any:
     """
     Получает комментарии к посту
