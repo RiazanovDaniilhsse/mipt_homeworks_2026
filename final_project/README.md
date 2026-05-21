@@ -8,7 +8,7 @@ GigaVibeMiptCode - консольное приложение-чат для об�
 
 3) создать локально свой config.yaml:
 
-api_key: ""
+api_key: "ollama_secret_token_here"
 api_host: "http://localhost:11434/v1/"
 limit_message: 11
 limit_chars: 2000
