@@ -1,12 +1,21 @@
-# Итоговый проект "GigaVibeMiptCode"
+GigaVibeMiptCode - консольное приложение-чат для общения с LLM.
 
-Актуальный текст задания доступен [здесь](https://docs.google.com/document/d/1hjEwsQd8m6-esJA37ZkGNIwK9Rn2edBC0MozFxpqxRg/edit?usp=sharing).
+Запуск:
 
-**Дедлайн загрузки решений: 23:59 22 мая.**
+1) нужно активировать виртуальное окружение в папке проекта .venv\Scripts\activate
 
-В рамках проекта вам предстоит создать собственного ИИ-ассистента с консольным интерфейсом, который будет обрабатывать пользовательский ввод, отправлять запросы к LLM и выводить пользователю ответы в разных режимах.
+2) установить библиотеки pip install openai pyyaml
 
-Решения необходимо подгрузить в форки данного репозитория.
+3) создать локально свой config.yaml:
 
-Требования к линтерам смягчены: используйте ruff check с конфигурацией из нового ruff.toml
-Проверку типов выполняем через простой запуск mypy.
+api_key: "ollama_secret_token_here"
+api_host: "http://localhost:11434/v1/"
+limit_message: 11
+limit_chars: 2000
+temperature: 0.7
+system_prompt: "You are a helpful and precise MIPT student assistant."
+model: "gemma3:270m"
+
+если используется локальный хост Ollama, нужную модель необходимо скачать
+
+4) далее запустить main.py
