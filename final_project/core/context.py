@@ -13,17 +13,17 @@ class ContextManager:
         self.limit_chars = limit_chars
         self.messages: list[dict[str, str]] = []
         if self.system_prompt:
-            self.messages.append({"role": "system", "content": self.system_prompt})
+            self.messages.append({'role': 'system', 'content': self.system_prompt})
 
     def add_message(self, role: str, content: str) -> None:
         if self.limit_chars is not None and len(content) > self.limit_chars:
             content = content[-self.limit_chars :]
 
-        self.messages.append({"role": role, "content": content})
+        self.messages.append({'role': role, 'content': content})
         self.enforce_limits()
 
     def enforce_limits(self) -> None:
-        start_idx = 1 if (self.messages and self.messages[0]["role"] == "system") else 0
+        start_idx = 1 if (self.messages and self.messages[0]['role'] == 'system') else 0
         if self.limit_message is not None:
             while len(self.messages) > self.limit_message:
                 if len(self.messages) > start_idx:
@@ -37,20 +37,20 @@ class ContextManager:
                 else:
                     last_msg_idx = len(self.messages) - 1
                     if last_msg_idx >= start_idx:
-                        current_content = self.messages[last_msg_idx]["content"]
+                        current_content = self.messages[last_msg_idx]['content']
                         allowed_len = self.limit_chars - (
                             self._get_total_chars() - len(current_content)
                         )
                         if allowed_len > 0:
-                            self.messages[last_msg_idx]["content"] = current_content[
+                            self.messages[last_msg_idx]['content'] = current_content[
                                 -allowed_len:
                             ]
                         else:
-                            self.messages[last_msg_idx]["content"] = ""
+                            self.messages[last_msg_idx]['content'] = ''
                     break
 
     def _get_total_chars(self) -> int:
-        return sum(len(msg["content"]) for msg in self.messages)
+        return sum(len(msg['content']) for msg in self.messages)
 
     def get_messages(self) -> list[dict[str, str]]:
         return self.messages
@@ -58,4 +58,4 @@ class ContextManager:
     def reset(self) -> None:
         self.messages = []
         if self.system_prompt:
-            self.messages.append({"role": "system", "content": self.system_prompt})
+            self.messages.append({'role': 'system', 'content': self.system_prompt})
